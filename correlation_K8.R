@@ -1,5 +1,5 @@
 ##### Performance in characterizing the correlation among the traits (eight traits) #####
-# Figures 1b and 2
+# Figures 1b and 2 in the main text
 
 library(MASS)
 library(pbivnorm)
