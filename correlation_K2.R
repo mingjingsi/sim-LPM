@@ -1,5 +1,5 @@
 ##### Performance in characterizing the correlation among the traits (two traits) #####
-# Vary alpha=0.2, 0.4, 0.6, r=0.25, 1, 4 and rho=0, 0.05, 0.1, 0.15, 0.2, 0:25 
+# Vary alpha=0.2, 0.4, 0.6, r=0.25, 1, 4 and rho=0, 0.05, 0.1, 0.15, 0.2, 0.25 
 # to get Figure 3 in the main text
 
 library(MASS)
