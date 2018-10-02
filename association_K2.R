@@ -1,4 +1,4 @@
-##### Performance the identification of risk SNPs for one trait (two traits) #####
+##### Performance the identification of risk SNPs of one specific trait when correlated trait is integrated #####
 # Vary alpha2=0.2, 0.4, 0.6 and rho=0, 0.2, 0.4, 0.6 to get Figure S9 in Supplementary Document
 
 library(MASS)
