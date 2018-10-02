@@ -1,5 +1,6 @@
 ##### Simulations if P-values are not from beta distribution #####
 # Vary dist="near_normal", "skew", "big_normal" to get Figure S33 in Supplementary Document
+# Vary rho=0, 0.2, 0.4, 0.6 to get Figure S34 in Supplementary Document
 
 library(MASS)
 library(pbivnorm)
@@ -86,8 +87,6 @@ R <- matrix(c(1, rho, rho, 1), K, K)
 
 dist <- "spiky"
 
-rep <- 500  # repeat times
-
 library(LPM)
 
 # function to generate data
@@ -118,6 +117,8 @@ generate_data <- function(M, K, D, A, beta, R, dist){
   return( list(Pvalue = Pvalue, A = A, beta = beta, eta = eta))
 }
 
+# compute type I error
+rep <- 500  # repeat times
 pvalue_rho <- numeric(rep)
 
 for (l in 1:rep){
@@ -127,6 +128,55 @@ for (l in 1:rep){
 
   fit <- bLPM(Pvalue, X = X)
   pvalue_rho[i] <- test_rho(fit)
+  
+  fitLPM <- getLPMest(fit)
+
+  post <- post(Pvalue[1], X, 1, fitLPM)
+  assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
+  FDR1.sep[l] <- comp_FDR(data$eta[, 1], assoc1$eta)
+  
+  post <- post(Pvalue[2], X, 2, fitLPM)
+  assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
+  FDR2.sep[l] <- comp_FDR(data$eta[, 2], assoc1$eta)
+  
+  post <- post(Pvalue[c(1, 2)], X, c(1, 2), fitLPM)
+  assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
+  FDR1.joint[l] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
+  FDR2.joint[l] <- comp_FDR(data$eta[, 2], assoc2$eta.marginal2)
+  FDR12[l] <- comp_FDR(((data$eta[, 1] + data$eta[, 2]) == 2), assoc2$eta.joint)
 }
 
-result <- sum(pvalue_rho < 0.05)/rep
+typeIerror <- sum(pvalue_rho < 0.05)/rep
+
+# compute FDR
+rep <- 50
+FDR1.sep <- numeric(rep)
+FDR2.sep <- numeric(rep)
+FDR1.joint <- numeric(rep)
+FDR2.joint <- numeric(rep)
+FDR12 <- numeric(rep)
+
+for (l in 1:rep){
+  data <- generate_data(M, K, D, A, beta, R, dist)
+  Pvalue <- data$Pvalue
+  X      <- data$A
+  
+  fit <- bLPM(Pvalue, X = X)
+  pvalue_rho[i] <- test_rho(fit)
+  
+  fitLPM <- getLPMest(fit)
+  
+  post <- post(Pvalue[1], X, 1, fitLPM)
+  assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
+  FDR1.sep[l] <- comp_FDR(data$eta[, 1], assoc1$eta)
+  
+  post <- post(Pvalue[2], X, 2, fitLPM)
+  assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
+  FDR2.sep[l] <- comp_FDR(data$eta[, 2], assoc1$eta)
+  
+  post <- post(Pvalue[c(1, 2)], X, c(1, 2), fitLPM)
+  assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
+  FDR1.joint[l] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
+  FDR2.joint[l] <- comp_FDR(data$eta[, 2], assoc2$eta.marginal2)
+  FDR12[l] <- comp_FDR(((data$eta[, 1] + data$eta[, 2]) == 2), assoc2$eta.joint)
+}
