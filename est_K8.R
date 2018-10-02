@@ -1,5 +1,5 @@
 ##### Parameter estimation #####
-# Figure S22 in Supplementary Document
+# Figure S22 and Figure S23-S32 in Supplementary Document
 
 library(MASS)
 library(pbivnorm)
@@ -67,6 +67,10 @@ est_alpha <- NULL
 est_beta <- NULL
 est_R <- NULL
 
+est_bLPM_alpha <- NULL
+est_bLPM_beta <- NULL
+est_bLPM_rho <- NULL
+
 for (i in 1:rep){
   data <- generate_data(M, K, D, A, beta, alpha, R)
   Pvalue <- data$Pvalue
@@ -78,5 +82,9 @@ for (i in 1:rep){
   est_alpha <- c(est_alpha, list(fitLPM$alpha))
   est_beta <- c(est_beta, list(fitLPM$beta))
   est_R <- c(est_R, list(fitLPM$R))
+  
+  est_bLPM_alpha <- c(est_bLPM_alpha, list(fit$alpha))
+  est_bLPM_beta <- c(est_bLPM_beta, list(fit$beta))
+  est_bLPM_rho <- c(est_bLPM_rho, list(fit$rho))
 }
 
