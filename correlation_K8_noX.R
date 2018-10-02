@@ -1,5 +1,4 @@
-##### Performance in characterizing the correlation among the traits #####
-##### when annotations have no role (eight traits)                   #####
+##### Performance in characterizing the correlation among the traits when annotations have no role (eight traits) #####
 # Figures S1 in Supplementary Document
 
 library(MASS)
