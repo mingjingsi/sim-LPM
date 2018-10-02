@@ -1,6 +1,6 @@
-##### Simulations if P-values are not from beta distribution #####
-# Vary dist="near_normal", "skew", "big_normal" to get Figure S33 in Supplementary Document
-# Vary rho=0, 0.2, 0.4, 0.6 to get Figure S34 in Supplementary Document
+##### Simulations when P-values are obtained from individual-level data #####
+# Vary h2=0.3, 0.5, 0.8 to get Figure S35 in Supplementary Document
+# Vary rho=0, 0.2, 0.4, 0.6 to get Figure S36 in Supplementary Document
 
 library(MASS)
 library(pbivnorm)
@@ -23,52 +23,11 @@ comp_FDR <- function(true, est){
   return(FDR.fit)
 }
 
-spiky <- function(N){
-  r <- runif(N)
-  z <- rnorm(N, 0, 0.25)
-  if(sum(r <= 0.2) != 0)
-    z[which(r <= 0.2)] <- rnorm(sum(r <= 0.2), 0, 0.5)
-  if(sum(r > 0.2 & r <= 0.4) != 0)
-    z[which(r > 0.2 & r <= 0.4)] <- rnorm(sum(r > 0.2 & r <= 0.4), 0, 1)
-  if(sum(r > 0.8) != 0)
-    z[which(r > 0.8)] <- rnorm(sum(r > 0.8), 0, 2)
-  
-  return(z)
-}
-
-near_normal <- function(N){
-  r <- runif(N)
-  z <- rnorm(N, 0, 1)
-  if(sum(r <= 1/3) != 0)
-    z[which(r <= 1/3)] <- rnorm(sum(r <= 1/3), 0, 2)
-  
-  return(z)
-}
-
-skew <- function(N){
-  r <- runif(N)
-  z <- rnorm(N, -2, 2)
-  if(sum(r <= 0.25) != 0)
-    z[which(r <= 0.25)] <- rnorm(sum(r <= 0.25), -1, 1.5)
-  if(sum(r > 0.25 & r <= (0.25+1/3)) != 0)
-    z[which(r > 0.25 & r <= (0.25+1/3))] <- rnorm(sum(r > 0.25 & r <= (0.25+1/3)), 0, 1)
-  if(sum(r > 5/6) != 0)
-    z[which(r > 5/6)] <- rnorm(sum(r > 5/6), 1, 1)
-  
-  return(z)
-}
-
-big_normal <- function(N){
-  r <- runif(N)
-  z <- rnorm(N, 0, 4)
-  
-  return(z)
-}
-
 K <- 2                 # No. of traits
-M <- 100000            # No. of SNPs
+M <- 10000             # No. of SNPs
+N <- 5000              # No. of individuals
 D <- 5                 # No. of annotations
-beta0 <- -1            # intercept of the probit model
+beta0 <- -3            # intercept of the probit model
 beta0 <- rep(beta0, K)
 set.seed(1)
 beta    <- matrix(rnorm(K*D), K, D)  # coefficients of annotations
@@ -81,11 +40,12 @@ r <- 1                               # the relative signal strengh between annot
 sigmae2 <- var(A %*% t(beta))/r
 beta    <- beta/sqrt(diag(sigmae2))
 beta    <- cbind(as.matrix(beta0), beta)
+f <- runif(M, 0.05, 0.5)
 
 library(LPM)
 
 # function to generate data
-generate_data <- function(M, K, D, A, beta, R, dist){
+generate_data_ind <- function(M, K, D, N, A, beta, h2, R, f){
   
   Z <- cbind(rep(1, M), A) %*% t(beta) + mvrnorm(M, rep(0, K), R)
   
@@ -94,12 +54,25 @@ generate_data <- function(M, K, D, A, beta, R, dist){
   
   Pvalue <- NULL
   
-  fz <- match.fun(dist)
-  
   for (k in 1:K){
-    z <- fz(sum(indexeta[, k]))
-    Pvalue_tmp <- runif(M)
-    Pvalue_tmp[indexeta[, k]] <- pnorm(abs(z), lower.tail = FALSE)*2
+    # genotype data
+    X_tmp <- matrix(rnorm(N*M), N, M)
+    X <- matrix(1, N, M)
+    X[t(t(X_tmp) - quantile(X_tmp, f^2)) < 0] <- 2
+    X[t(t(X_tmp) - quantile(X_tmp, 1-(1-f)^2)) > 0] <- 0
+    
+    # effect size
+    beta_SNP <-  numeric(M)
+    beta_SNP[indexeta[, k]] <- rnorm(sum(indexeta[, k]), 0, 1)
+    
+    # environment effect
+    e <- rnorm(N, 0, sqrt((1/h2-1)*var(X%*%beta_SNP)))
+    
+    # phenotype
+    y <- X%*%beta_SNP + e
+    
+    # p-value
+    Pvalue_tmp <- apply(X, 2, function(X.col) summary(lm(y ~ X.col))$coefficients[2,4])
     
     Pvalue <- c(Pvalue, list(data.frame(SNP = seq(1, M), p = Pvalue_tmp)))
     
@@ -115,12 +88,12 @@ generate_data <- function(M, K, D, A, beta, R, dist){
 # compute type I error
 rho <- 0       # correlation between the two traits
 R <- matrix(c(1, rho, rho, 1), K, K)
-dist <- "spiky"
-rep <- 500  # repeat times
+h2 <- 0.3      # heritability
+rep <- 500     # repeat times
 pvalue_rho <- numeric(rep)
 
 for (l in 1:rep){
-  data <- generate_data(M, K, D, A, beta, R, dist)
+  data <- generate_data_ind(M, K, D, N, A, beta, h2, R, f)
   Pvalue <- data$Pvalue
   X      <- data$A
 
@@ -133,7 +106,7 @@ typeIerror <- sum(pvalue_rho < 0.05)/rep
 # compute FDR
 rho <- 0       # correlation between the two traits
 R <- matrix(c(1, rho, rho, 1), K, K)
-dist <- "spiky"
+h2 <- 0.3      # heritability
 rep <- 50
 FDR1.sep <- numeric(rep)
 FDR2.sep <- numeric(rep)
@@ -142,7 +115,7 @@ FDR2.joint <- numeric(rep)
 FDR12 <- numeric(rep)
 
 for (l in 1:rep){
-  data <- generate_data(M, K, D, A, beta, R, dist)
+  data <- generate_data_ind(M, K, D, N, A, beta, h2, R, f)
   Pvalue <- data$Pvalue
   X      <- data$A
   
