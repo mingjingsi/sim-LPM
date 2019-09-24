@@ -73,7 +73,7 @@ for (i in 1:rep){
   X      <- data$A
 
   fit <- bLPM(Pvalue, X = X, coreNum = 10)
-  est <- c(est, list(fit))
+  est_bLPM <- c(est_bLPM, list(fit))
 
   fitLPM <- LPM(fit)
   est_LPM <- c(est_LPM, list(fitLPM))
