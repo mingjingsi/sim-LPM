@@ -33,11 +33,12 @@ generate_data <- function(M, K, D, A, beta, alpha, R){
 
 K <- 2                 # No. of traits
 M <- 100000            # No. of SNPs
-D <- 5                 # No. of annotations
+D <- 1                 # No. of annotations
 beta0 <- -1            # intercept of the probit model
 beta0 <- rep(beta0, K)
 set.seed(1)
-beta    <- rep(0, K)   # coefficients of annotations
+beta <- rep(0, K)      # coefficients of annotations
+beta <- cbind(beta0, beta)
 A.perc <- 0.2                        # the proportion the entries in X is 1
 A         <- rep(0, M*D)             # the design matrix of annotation
 indexA    <- sample(M*D, M*D*A.perc)
