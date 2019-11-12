@@ -1,5 +1,5 @@
 ##### Parameter estimation #####
-# Figure S22 and Figure S23-S32 in Supplementary Document
+# Supplementary Figures S31-S49
 
 library(MASS)
 library(pbivnorm)
