@@ -144,7 +144,7 @@ generate_data_GGPA <- function(M, K, beta0, alpha, R){
 
 est_GGPA <- NULL
 
-for (k in 1:rep){
+for (i in 1:rep){
   data <- generate_data_GGPA(M, K, beta0, alpha, R)
 
   fit_GGPA <- GGPA(data$Pvalue)
