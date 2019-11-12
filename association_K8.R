@@ -1,12 +1,13 @@
 ##### Performance the identification of risk SNPs for one trait (eight traits) #####
-# Figure 4 in the main text and Figure S11 in Supplementary Document
-# Change the target trait to get Figures S2-S8 and Figures S12 in Supplementary Document
+# Figure 2 in the main text and Supplementary Figure S18 and S19
+# Change the target trait to get Supplementary Figures S8-S14
 
 library(MASS)
 library(pbivnorm)
 library(mvtnorm)
 library(pROC)
 
+# function to compute FDR
 comp_FDR <- function(true, est){
   
   t <- table(true, est)
@@ -22,6 +23,7 @@ comp_FDR <- function(true, est){
   
   return(FDR.fit)
 }
+# function to compute AUC
 comp_AUC <- function(true, post){
   fdr <- 1 - post
   AUC <- as.numeric(roc(true, fdr)$auc)
@@ -94,7 +96,7 @@ AUC14 <- matrix(0, rep, 7)
 FDR124 <- numeric(rep)
 AUC124 <- numeric(rep)
 
-for (l in 1:rep){
+for (i in 1:rep){
   data <- generate_data(M, K, D, A, beta, alpha, R)
   Pvalue <- data$Pvalue
   X      <- data$A
@@ -104,39 +106,39 @@ for (l in 1:rep){
 
   post <- post(Pvalue[1], X, 1, fitLPM)
   assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1[l, 1] <- comp_FDR(data$eta[, 1], assoc1$eta)
-  AUC1[l, 1] <- comp_AUC(data$eta[, 1], post$posterior)
+  FDR1[i, 1] <- comp_FDR(data$eta[, 1], assoc1$eta)
+  AUC1[i, 1] <- comp_AUC(data$eta[, 1], post$posterior)
   
-  for (i in 2:8){
+  for (k in 2:8){
     post <- post2(Pvalue[c(1, i)], X, c(1, i), fitLPM)
     assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-    FDR1[l, i] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
-    AUC1[l, i] <- comp_AUC(data$eta[, 1], post$post.marginal1)
+    FDR1[i, k] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
+    AUC1[i, k] <- comp_AUC(data$eta[, 1], post$post.marginal1)
   }
   
   post <- post3(Pvalue[1:3], X, c(1, 2, 3), fitLPM)
   assoc3 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1[l, 9] <- comp_FDR(data$eta[, 1], assoc3$eta.marginal1)
-  AUC1[l, 9] <- comp_AUC(data$eta[, 1], post$post.marginal1)
+  FDR1[i, 9] <- comp_FDR(data$eta[, 1], assoc3$eta.marginal1)
+  AUC1[i, 9] <- comp_AUC(data$eta[, 1], post$post.marginal1)
   
   post <- post(Pvalue[c(1, 4)], X, c(1, 4), fitLPM)
   assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR14[l, 1] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc2$eta.joint)
-  AUC14[l, 1] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), post$post.joint)
+  FDR14[i, 1] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc2$eta.joint)
+  AUC14[i, 1] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), post$post.joint)
   
   post <- post(Pvalue[c(1, 2, 4)], X, c(1, 2, 4), fitLPM)
   assoc3 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR14[l, 2] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc3$eta.marginal13)
-  AUC14[l, 2] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), post$post.marginal13)
-  FDR124[l] <- comp_FDR(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), assoc3$eta.joint)
-  AUC124[l] <- comp_AUC(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), post$post.joint)
+  FDR14[i, 2] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc3$eta.marginal13)
+  AUC14[i, 2] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), post$post.marginal13)
+  FDR124[i] <- comp_FDR(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), assoc3$eta.joint)
+  AUC124[i] <- comp_AUC(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), post$post.joint)
   
   id <- 3
-  for (i in c(3, 5:8)){
-    post <- post(Pvalue[c(1, 4, i)], X, c(1, 4, i), fitLPM)
+  for (k in c(3, 5:8)){
+    post <- post(Pvalue[c(1, 4, k)], X, c(1, 4, k), fitLPM)
     assoc3 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-    FDR14[l, id] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc3$eta.marginal12)
-    AUC14[l, id] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), post$post.marginal12)
+    FDR14[i, id] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc3$eta.marginal12)
+    AUC14[i, id] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), post$post.marginal12)
     id <- id + 1
   }
   
@@ -170,46 +172,46 @@ AUC14_GPA <- matrix(0, rep, 7)
 FDR124_GPA <- numeric(rep)
 AUC124_GPA <- numeric(rep)
 
-for (k in 1:rep){
+for (i in 1:rep){
   data <- generate_data_GPA(M, K, D, A, beta, alpha, R)
   Pvalue <- data$Pvalue
   X      <- data$A
 
   fit <- GPA(Pvalue[, 1], X)
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global")
-  FDR1_GPA[k, 1] <- comp_FDR(data$eta[, 1], assoc1)
-  AUC1_GPA[k, 1] <- comp_AUC(data$eta[, 1], fdr(fit))
+  FDR1_GPA[i, 1] <- comp_FDR(data$eta[, 1], assoc1)
+  AUC1_GPA[i, 1] <- comp_AUC(data$eta[, 1], fdr(fit))
   
-  for (i in 2:8){
-    fit <- GPA(Pvalue[, c(1, i)], X)
+  for (k in 2:8){
+    fit <- GPA(Pvalue[, c(1, k)], X)
     assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "1*")
-    FDR1_GPA[k, i] <- comp_FDR(data$eta[, 1], assoc1)
-    AUC1_GPA[k, i] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1*"))
+    FDR1_GPA[i, k] <- comp_FDR(data$eta[, 1], assoc1)
+    AUC1_GPA[i, k] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1*"))
   }
   
   fit <- GPA(Pvalue[, c(1, 2, 3)], X)
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "1**")
-  FDR1_GPA[k, 9] <- comp_FDR(data$eta[, 1], assoc1)
-  AUC1_GPA[k, 9] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1**"))
+  FDR1_GPA[i, 9] <- comp_FDR(data$eta[, 1], assoc1)
+  AUC1_GPA[i, 9] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1**"))
   
   fit <- GPA(Pvalue[, c(1, 4)], X)
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "11")
-  FDR14_GPA[k, 1] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc1)
-  AUC14_GPA[k, 1] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), fdr(fit, pattern = "11"))
+  FDR14_GPA[i, 1] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc1)
+  AUC14_GPA[i, 1] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), fdr(fit, pattern = "11"))
   
   id <- 1
-  for (i in c(2, 3, 5:8)){
+  for (k in c(2, 3, 5:8)){
     id <- id + 1
-    fit <- GPA(Pvalue[, c(1, 4, i)], X)
+    fit <- GPA(Pvalue[, c(1, 4, k)], X)
     assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "11*")
-    FDR14_GPA[k, id] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc1)
-    AUC14_GPA[k, id] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), fdr(fit, pattern = "11*"))
+    FDR14_GPA[i, id] <- comp_FDR(((data$eta[, 1] + data$eta[, 4]) == 2), assoc1)
+    AUC14_GPA[i, id] <- comp_AUC(((data$eta[, 1] + data$eta[, 4]) == 2), fdr(fit, pattern = "11*"))
   }
   
   fit <- GPA(Pvalue[, c(1, 2, 4)], X)
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "111")
-  FDR124_GPA[k] <- comp_FDR(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), assoc1)
-  AUC124_GPA[k] <- comp_AUC(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), fdr(fit, pattern = "111"))
+  FDR124_GPA[i] <- comp_FDR(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), assoc1)
+  AUC124_GPA[i] <- comp_AUC(((data$eta[, 1] + data$eta[, 2] + data$eta[, 4]) == 3), fdr(fit, pattern = "111"))
   
 }
 
