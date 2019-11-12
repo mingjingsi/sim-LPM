@@ -1,5 +1,5 @@
 ##### Comparison with RiVIERA #####
-# Figure S10 in Supplementary Document
+# Supplementary Figures S16 and S17
 
 library(MASS)
 library(pbivnorm)
@@ -24,11 +24,10 @@ beta    <- cbind(as.matrix(beta0), beta)
 
 alpha <- c(0.2, 0.2)  # parameter in the Beta distribution
 rho <- 0.6            # correlation between the two traits
-R <- matrix(c(1, rho, rho, 1), K, K)
+R <- matrix(c(1, rho, rho, 1), K, K) # correlation matrix for the traits
 
 rep <- 50  # repeat times
 
-##### LPM #####
 library(LPM)
 
 # function to generate data
@@ -61,7 +60,7 @@ post_all <- NULL
 ppa_all <- NULL
 pvalue_all <- NULL
 
-for (k in 1:rep){
+for (i in 1:rep){
   
   data <- generate_data(M, K, D, A, beta, alpha, R)
   Pvalue <- data$Pvalue
@@ -137,3 +136,16 @@ for(i in 1:rep){
     top_pvalue[i, j] <- sum(((est_tmp + eta_tmp)==2))/sum(eta_tmp)
   }
 }
+
+eta1 <- matrix(0, rep, M)
+comp_roc_LPM <- matrix(0, rep, M)
+comp_roc_riviera <- matrix(0, rep, M)
+for (i in 1:rep){
+  eta1[i, ] <- eta_all[[i]][, 1]
+  comp_roc_LPM[i, ] <- post_all[[i]]$post.marginal1
+  comp_roc_riviera[i, ] <- ppa_all[[i]][, 1]
+}
+
+library(ROCR)
+x <- prediction(as.list(as.data.frame(t(rbind(comp_roc_LPM, comp_roc_riviera)))), as.list(as.data.frame(t(rbind(eta1, eta1)))))
+ROC <- performance(x, "tpr", "fpr")
