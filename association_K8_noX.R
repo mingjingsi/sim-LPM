@@ -1,11 +1,12 @@
 ##### Performance the identification of risk SNPs for one trait when annotations have no role (eight traits) #####
-# Change the target trait to get Figures S13-S20 in Supplementary Document
+# Change the target trait to get Figures S20-S27 in Supplementary Document
 
 library(MASS)
 library(pbivnorm)
 library(mvtnorm)
 library(pROC)
 
+# function to compute FDR
 comp_FDR <- function(true, est){
   
   t <- table(true, est)
@@ -21,6 +22,7 @@ comp_FDR <- function(true, est){
   
   return(FDR.fit)
 }
+# function to compute AUC
 comp_AUC <- function(true, post){
   fdr <- 1 - post
   AUC <- as.numeric(roc(true, fdr)$auc)
@@ -76,7 +78,7 @@ generate_data <- function(M, K, beta0, alpha, R){
 FDR1 <- matrix(0, rep, 9)
 AUC1 <- matrix(0, rep, 9)
 
-for (l in 1:rep){
+for (i in 1:rep){
   data <- generate_data(M, K, beta0, alpha, R)
   Pvalue <- data$Pvalue
 
@@ -85,20 +87,20 @@ for (l in 1:rep){
 
   post <- post(Pvalue[1], X = NULL, 1, fitLPM)
   assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1[l, 1] <- comp_FDR(data$eta[, 1], assoc1$eta)
-  AUC1[l, 1] <- comp_AUC(data$eta[, 1], post$posterior)
+  FDR1[i, 1] <- comp_FDR(data$eta[, 1], assoc1$eta)
+  AUC1[i, 1] <- comp_AUC(data$eta[, 1], post$posterior)
   
-  for (i in 2:8){
-    post <- post2(Pvalue[c(1, i)], X = NULL, c(1, i), fitLPM)
+  for (k in 2:8){
+    post <- post2(Pvalue[c(1, k)], X = NULL, c(1, k), fitLPM)
     assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-    FDR1[l, i] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
-    AUC1[l, i] <- comp_AUC(data$eta[, 1], post$post.marginal1)
+    FDR1[i, k] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
+    AUC1[i, k] <- comp_AUC(data$eta[, 1], post$post.marginal1)
   }
   
   post <- post3(Pvalue[1:3], X = NULL, c(1, 2, 3), fitLPM)
   assoc3 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1[l, 9] <- comp_FDR(data$eta[, 1], assoc3$eta.marginal1)
-  AUC1[l, 9] <- comp_AUC(data$eta[, 1], post$post.marginal1)
+  FDR1[i, 9] <- comp_FDR(data$eta[, 1], assoc3$eta.marginal1)
+  AUC1[i, 9] <- comp_AUC(data$eta[, 1], post$post.marginal1)
 }
 
 ##### GPA #####
@@ -124,26 +126,26 @@ generate_data_GPA <- function(M, K, beta0, alpha, R){
 FDR1_GPA <- matrix(0, rep, 9)
 AUC1_GPA <- matrix(0, rep, 9)
 
-for (k in 1:rep){
+for (i in 1:rep){
   data <- generate_data_GPA(M, K, beta0, alpha, R)
   Pvalue <- data$Pvalue
 
   fit <- GPA(Pvalue[, 1])
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global")
-  FDR1_GPA[k, 1] <- comp_FDR(data$eta[, 1], assoc1)
-  AUC1_GPA[k, 1] <- comp_AUC(data$eta[, 1], fdr(fit))
+  FDR1_GPA[i, 1] <- comp_FDR(data$eta[, 1], assoc1)
+  AUC1_GPA[i, 1] <- comp_AUC(data$eta[, 1], fdr(fit))
   
-  for (i in 2:8){
-    fit <- GPA(Pvalue[, c(1, i)])
+  for (k in 2:8){
+    fit <- GPA(Pvalue[, c(1, k)])
     assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "1*")
-    FDR1_GPA[k, i] <- comp_FDR(data$eta[, 1], assoc1)
-    AUC1_GPA[k, i] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1*"))
+    FDR1_GPA[i, k] <- comp_FDR(data$eta[, 1], assoc1)
+    AUC1_GPA[i, k] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1*"))
   }
   
   fit <- GPA(Pvalue[, c(1, 2, 3)])
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global", pattern = "1**")
-  FDR1_GPA[k, 9] <- comp_FDR(data$eta[, 1], assoc1)
-  AUC1_GPA[k, 9] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1**"))
+  FDR1_GPA[i, 9] <- comp_FDR(data$eta[, 1], assoc1)
+  AUC1_GPA[i, 9] <- comp_AUC(data$eta[, 1], fdr(fit, pattern = "1**"))
   
 }
 
@@ -171,16 +173,15 @@ generate_data_GGPA <- function(M, K, beta0, alpha, R){
 FDR_GGPA <- matrix(0, rep, 8)
 AUC_GGPA <- matrix(0, rep, 8)
 
-for (k in 1:rep){
+for (i in 1:rep){
   data <- generate_data_GGPA(M, K, beta0, alpha, R)
 
   fit_GGPA <- GGPA(data$Pvalue)
 
   assoc1 <- assoc(fit, FDR = 0.1, fdrControl = "global")
-  for (i in 1:8){
-    FDR[k, i] <- comp_FDR(data$eta[, i], assoc1[, i])
-    power[k, i] <- comp_power(data$eta[, i], assoc1[, i])
+  for (k in 1:8){
+    FDR[i, k] <- comp_FDR(data$eta[, k], assoc1[, k])
+    power[i, k] <- comp_power(data$eta[, k], assoc1[, k])
   }
-
 }
 
