@@ -1,11 +1,12 @@
-##### Performance the identification of risk SNPs of one specific trait when correlated trait is integrated #####
-# Vary alpha2=0.2, 0.4, 0.6 and rho=0, 0.2, 0.4, 0.6 to get Figure S9 in Supplementary Document
+##### Performance the identification of risk SNPs for one trait (two traits) #####
+# Vary alpha2 (0.2, 0.4, 0.6) and rho (0, 0.2, 0.4, 0.6) to get Supplementary Figure S15
 
 library(MASS)
 library(pbivnorm)
 library(mvtnorm)
 library(pROC)
 
+# function to compute FDR
 comp_FDR <- function(true, est){
   
   t <- table(true, est)
@@ -21,6 +22,7 @@ comp_FDR <- function(true, est){
   
   return(FDR.fit)
 }
+# function to compute AUC
 comp_AUC <- function(true, post){
   fdr <- 1 - post
   AUC <- as.numeric(roc(true, fdr)$auc)
@@ -44,10 +46,10 @@ sigmae2 <- var(A %*% t(beta))/r
 beta    <- beta/sqrt(diag(sigmae2))
 beta    <- cbind(as.matrix(beta0), beta)
 
-alpha1 <- 0.2  # parameter in the Beta distribution
-alpha2 <- 0.2
+alpha1 <- 0.2  # parameter in the Beta distribution for the first trait
+alpha2 <- 0.2  # parameter in the Beta distribution for the second trait
 rho <- 0       # correlation between the two traits
-R <- matrix(c(1, rho, rho, 1), K, K)
+R <- matrix(c(1, rho, rho, 1), K, K) # correlation matrix for the traits
 
 rep <- 50  # repeat times
 
@@ -82,7 +84,7 @@ generate_data <- function(M, K, D, A, beta, alpha, R){
 FDR <- numeric(rep)
 AUC <- numeric(rep)
 
-for (l in 1:rep){
+for (i in 1:rep){
   data <- generate_data(M, K, D, A, beta, alpha, R)
   Pvalue <- data$Pvalue
   X      <- data$A
@@ -92,7 +94,6 @@ for (l in 1:rep){
 
   post <- post(Pvalue, X, 1:2, fitLPM)
   assoc <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR[l] <- comp_FDR(data$eta[, 1], assoc$eta.marginal1)
-  AUC[l] <- comp_AUC(data$eta[, 1], post$post.marginal1)
-  
+  FDR[i] <- comp_FDR(data$eta[, 1], assoc$eta.marginal1)
+  AUC[i] <- comp_AUC(data$eta[, 1], post$post.marginal1)
 }
