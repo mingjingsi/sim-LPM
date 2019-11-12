@@ -1,12 +1,13 @@
 ##### Simulations when P-values are obtained from individual-level data #####
-# Vary h2=0.3, 0.5, 0.8 to get Figure S35 in Supplementary Document
-# Vary rho=0, 0.2, 0.4, 0.6 to get Figure S36 in Supplementary Document
+# Vary N2 (3000, 5000, 10000), h2 (0.3, 0.5, 0.8) and rho (0, 0.2, 0.4, 0.6, 0.8) 
+# to get Supplementary Figures S42-S44
 
 library(MASS)
 library(pbivnorm)
 library(mvtnorm)
 library(pROC)
 
+# function to compute FDR
 comp_FDR <- function(true, est){
   
   t <- table(true, est)
@@ -23,11 +24,13 @@ comp_FDR <- function(true, est){
   return(FDR.fit)
 }
 
-K <- 2                 # No. of traits
-M <- 10000             # No. of SNPs
-N <- 5000              # No. of individuals
-D <- 5                 # No. of annotations
-beta0 <- -3            # intercept of the probit model
+K <- 2                # No. of traits
+M <- 20000            # No. of SNPs
+N1 <- 10000           # No. of individuals for the first GWAS
+N2 <- 3000            # No. of individuals for the first GWAS
+N <- c(N1, N2)   
+D <- 5                # No. of annotations
+beta0 <- -3           # intercept of the probit model
 beta0 <- rep(beta0, K)
 set.seed(1)
 beta    <- matrix(rnorm(K*D), K, D)  # coefficients of annotations
@@ -40,7 +43,7 @@ r <- 1                               # the relative signal strengh between annot
 sigmae2 <- var(A %*% t(beta))/r
 beta    <- beta/sqrt(diag(sigmae2))
 beta    <- cbind(as.matrix(beta0), beta)
-f <- runif(M, 0.05, 0.5)
+f <- runif(M, 0.05, 0.5)             # minor allele frequency
 
 library(LPM)
 
@@ -56,8 +59,8 @@ generate_data_ind <- function(M, K, D, N, A, beta, h2, R, f){
   
   for (k in 1:K){
     # genotype data
-    X_tmp <- matrix(rnorm(N*M), N, M)
-    X <- matrix(1, N, M)
+    X_tmp <- matrix(rnorm(N[k]*M), N[k], M)
+    X <- matrix(1, N[k], M)
     X[t(t(X_tmp) - quantile(X_tmp, f^2)) < 0] <- 2
     X[t(t(X_tmp) - quantile(X_tmp, 1-(1-f)^2)) > 0] <- 0
     
@@ -86,53 +89,61 @@ generate_data_ind <- function(M, K, D, N, A, beta, h2, R, f){
 }
 
 # compute type I error
-rho <- 0       # correlation between the two traits
+rho <- 0    # correlation between the two traits
 R <- matrix(c(1, rho, rho, 1), K, K)
-h2 <- 0.3      # heritability
-rep <- 500     # repeat times
+h2 <- 0.3   # heritability
+rep <- 500  # repeat times
+
 pvalue_rho <- numeric(rep)
 
-for (l in 1:rep){
+for (i in 1:rep){
   data <- generate_data_ind(M, K, D, N, A, beta, h2, R, f)
   Pvalue <- data$Pvalue
   X      <- data$A
-
+  
   fit <- bLPM(Pvalue, X = X)
-  pvalue_rho[i] <- test_rho(fit)
+  pvalue_rho[i] <- test_rho(fit)[1, 2]
 }
 
-typeIerror <- sum(pvalue_rho < 0.05)/rep
+TypeIerror <- sum(pvalue_rho < 0.05)/rep
 
-# compute FDR
-rho <- 0       # correlation between the two traits
+# estimate alpha
+rho <- 0  # correlation between the two traits
 R <- matrix(c(1, rho, rho, 1), K, K)
-h2 <- 0.3      # heritability
-rep <- 50
-FDR1.sep <- numeric(rep)
-FDR2.sep <- numeric(rep)
-FDR1.joint <- numeric(rep)
-FDR2.joint <- numeric(rep)
-FDR12 <- numeric(rep)
+h2 <- 0.3 # heritability
+rep <- 50 # repeat times
 
-for (l in 1:rep){
+est_alpha <- numeric(rep)
+
+for (i in 1:rep){
   data <- generate_data_ind(M, K, D, N, A, beta, h2, R, f)
   Pvalue <- data$Pvalue
   X      <- data$A
   
   fit <- bLPM(Pvalue, X = X)
-  fitLPM <- getLPMest(fit)
+  est_alpha[i] <- fit$alpha[2, 1]
+}
+
+# compute FDR
+rho <- 0  # correlation between the two traits
+R <- matrix(c(1, rho, rho, 1), K, K)
+h2 <- 0.3 # heritability
+rep <- 50 # repeat times
+
+FDR1 <- numeric(rep)
+FDR2 <- numeric(rep)
+FDR12 <- numeric(rep)
+
+for (i in 1:rep){
+  data <- generate_data_ind(M, K, D, N, A, beta, h2, R, f)
+  Pvalue <- data$Pvalue
+  X      <- data$A
   
-  post <- post(Pvalue[1], X, 1, fitLPM)
-  assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1.sep[l] <- comp_FDR(data$eta[, 1], assoc1$eta)
-  
-  post <- post(Pvalue[2], X, 2, fitLPM)
-  assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR2.sep[l] <- comp_FDR(data$eta[, 2], assoc1$eta)
+  fit <- bLPM(Pvalue, X = X)
+  fitLPM <- LPM(fit)
   
   post <- post(Pvalue[c(1, 2)], X, c(1, 2), fitLPM)
   assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1.joint[l] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
-  FDR2.joint[l] <- comp_FDR(data$eta[, 2], assoc2$eta.marginal2)
-  FDR12[l] <- comp_FDR(((data$eta[, 1] + data$eta[, 2]) == 2), assoc2$eta.joint)
+  FDR1[i] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
+  FDR2[i] <- comp_FDR(data$eta[, 2], assoc2$eta.marginal2)
 }
