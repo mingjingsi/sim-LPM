@@ -1,5 +1,6 @@
-##### Performance in characterizing the correlation among the traits when annotations have no role (eight traits) #####
-# Figures S1 in Supplementary Document
+##### Performance in characterizing the correlation among the traits #####
+##### when annotations have no role (eight traits)                   #####
+# Supplementary Figure S2
 
 library(MASS)
 library(pbivnorm)
@@ -73,7 +74,7 @@ for(i in 1:rep){
   test_rho_LPM[, , i] <- (rho_pvalue < 0.05/((K-1)*K/2))
 }
 
-# results to get Figure S1(a)
+# results to get Supplementary Figure S2a
 test_rho_LPM <- apply(test_rho_LPM, c(1, 2), mean)
 colnames(test_rho_LPM) <- paste("P", 1:8, sep = "")
 rownames(test_rho_LPM) <- colnames(test_rho_LPM)
@@ -114,7 +115,7 @@ for (k in 1:rep){
   }
 }
 
-# results to get Figure S1(b)
+# results to get Supplementary Figure S2b
 test_rho_GPA <- apply(test_rho_GPA, c(1, 2), mean)
 test_rho_GPA <- test_rho_GPA + t(test_rho_GPA)
 diag(test_rho_GPA) <- 1
@@ -151,6 +152,6 @@ for (k in 1:rep){
   est_GGPA <- c(est_GGPA, list(fit_GGPA))
 }
 
-# result to get Figure S1(c)
+# result to get Supplementary Figure S2c
 plot(est_GGPA[[1]]) 
 plot(est_GGPA[[2]])
