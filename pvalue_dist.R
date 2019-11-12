@@ -1,12 +1,13 @@
 ##### Simulations if P-values are not from beta distribution #####
-# Vary dist="near_normal", "skew", "big_normal" to get Figure S33 in Supplementary Document
-# Vary rho=0, 0.2, 0.4, 0.6 to get Figure S34 in Supplementary Document
+# Vary dist ("near_normal", "skew", "big_normal") and rho (0, 0.2, 0.4, 0.6) 
+# to get Supplementary Figures S45 and S46
 
 library(MASS)
 library(pbivnorm)
 library(mvtnorm)
 library(pROC)
 
+# function to compute FDR
 comp_FDR <- function(true, est){
   
   t <- table(true, est)
@@ -113,13 +114,13 @@ generate_data <- function(M, K, D, A, beta, R, dist){
 }
 
 # compute type I error
-rho <- 0       # correlation between the two traits
+rho <- 0        # correlation between the two traits
 R <- matrix(c(1, rho, rho, 1), K, K)
-dist <- "spiky"
-rep <- 500  # repeat times
+dist <- "spiky" # distribution
+rep <- 500      # repeat times
 pvalue_rho <- numeric(rep)
 
-for (l in 1:rep){
+for (i in 1:rep){
   data <- generate_data(M, K, D, A, beta, R, dist)
   Pvalue <- data$Pvalue
   X      <- data$A
@@ -128,20 +129,21 @@ for (l in 1:rep){
   pvalue_rho[i] <- test_rho(fit)
 }
 
-typeIerror <- sum(pvalue_rho < 0.05)/rep
+TypeIerror <- sum(pvalue_rho < 0.05)/rep
 
 # compute FDR
-rho <- 0       # correlation between the two traits
+rho <- 0        # correlation between the two traits
 R <- matrix(c(1, rho, rho, 1), K, K)
-dist <- "spiky"
-rep <- 50
+dist <- "spiky" # distribution
+rep <- 50       # repeat times
+
 FDR1.sep <- numeric(rep)
 FDR2.sep <- numeric(rep)
 FDR1.joint <- numeric(rep)
 FDR2.joint <- numeric(rep)
 FDR12 <- numeric(rep)
 
-for (l in 1:rep){
+for (i in 1:rep){
   data <- generate_data(M, K, D, A, beta, R, dist)
   Pvalue <- data$Pvalue
   X      <- data$A
@@ -151,15 +153,15 @@ for (l in 1:rep){
   
   post <- post(Pvalue[1], X, 1, fitLPM)
   assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1.sep[l] <- comp_FDR(data$eta[, 1], assoc1$eta)
+  FDR1.sep[i] <- comp_FDR(data$eta[, 1], assoc1$eta)
   
   post <- post(Pvalue[2], X, 2, fitLPM)
   assoc1 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR2.sep[l] <- comp_FDR(data$eta[, 2], assoc1$eta)
+  FDR2.sep[i] <- comp_FDR(data$eta[, 2], assoc1$eta)
   
   post <- post(Pvalue[c(1, 2)], X, c(1, 2), fitLPM)
   assoc2 <- assoc(post, FDRset = 0.1, fdrControl = "global")
-  FDR1.joint[l] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
-  FDR2.joint[l] <- comp_FDR(data$eta[, 2], assoc2$eta.marginal2)
-  FDR12[l] <- comp_FDR(((data$eta[, 1] + data$eta[, 2]) == 2), assoc2$eta.joint)
+  FDR1.joint[i] <- comp_FDR(data$eta[, 1], assoc2$eta.marginal1)
+  FDR2.joint[i] <- comp_FDR(data$eta[, 2], assoc2$eta.marginal2)
+  FDR12[i] <- comp_FDR(((data$eta[, 1] + data$eta[, 2]) == 2), assoc2$eta.joint)
 }
